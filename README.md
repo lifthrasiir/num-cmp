@@ -1,6 +1,6 @@
 # num-cmp
 
-The **[`NumCmp`](./trait.NumCmp.html)** trait for comparison between differently typed numbers.
+The **[`NumCmp`](https://docs.rs/num-cmp/*/num_cmp/trait.NumCmp.html)** trait for comparison between differently typed numbers.
 
 ```rust
 use std::f32;
