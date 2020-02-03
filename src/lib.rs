@@ -14,14 +14,7 @@
 //! assert_ne!(NumCmp::num_cmp(40_000_001.0f32, 40_000_001u32), Some(Ordering::Equal));
 //! assert_eq!(NumCmp::num_cmp(f32::NAN,        40_000_002u32), None);
 //! ```
-//!
-//! The `i128` Cargo feature can be enabled in nightly
-//! to get support for `i128` and `u128` types as well,
-//! which is being implemented in [Rust issue #35118][issue-35118].
-//!
-//! [issue-35118]: https://github.com/rust-lang/rust/issues/35118
 
-#![cfg_attr(feature = "i128", feature(i128_type))]
 #![deny(missing_docs)]
 
 use std::cmp::Ordering;
@@ -29,7 +22,7 @@ use std::cmp::Ordering;
 /// A trait for comparison between differently typed numbers.
 ///
 /// This trait is implemented for every pair of integer and floating-point types available,
-/// including `isize`, `usize` and also (when the `i128` feature is enabled) `i128` and `u128`.
+/// including `isize`, `usize` and also `i128` and `u128`.
 pub trait NumCmp<Other: Copy>: Copy {
     // only used for testing
     #[cfg(test)] fn num_cmp_strategy(self, other: Other) -> &'static str;
@@ -286,7 +279,7 @@ macro_rules! impl_for_nonequal_types_with_casting {
 }
 
 // strategy 4: for unsigned type T and signed type U,
-// if bit size of T is no less than that of U, 
+// if bit size of T is no less than that of U,
 // check if both operands are positive before doing the normal comparison in unsigned type.
 macro_rules! impl_for_nonequal_types_with_different_signedness {
     ($($unsigned:ty, $signed:ty;)*) => ($(
@@ -555,10 +548,6 @@ impl_for_equal_types! {
     u8; u16; u32; u64; usize;
     i8; i16; i32; i64; isize;
     f32; f64;
-}
-
-#[cfg(feature = "i128")]
-impl_for_equal_types! {
     u128;
     i128;
 }
@@ -575,6 +564,8 @@ impl_for_size_types! {
     usize => u32, i64; isize => i32, i64;
     usize => u32, f32; isize => i32, f32;
     usize => u32, f64; isize => i32, f64;
+    usize => u32, u128; isize => i32, u128;
+    usize => u32, i128; isize => i32, i128;
 }
 
 #[cfg(target_pointer_width = "64")]
@@ -589,16 +580,6 @@ impl_for_size_types! {
     usize => u64, i64; isize => i64, i64;
     usize => u64, f32; isize => i64, f32;
     usize => u64, f64; isize => i64, f64;
-}
-
-#[cfg(all(target_pointer_width = "32", feature = "i128"))]
-impl_for_size_types! {
-    usize => u32, u128; isize => i32, u128;
-    usize => u32, i128; isize => i32, i128;
-}
-
-#[cfg(all(target_pointer_width = "64", feature = "i128"))]
-impl_for_size_types! {
     usize => u64, u128; isize => i64, u128;
     usize => u64, i128; isize => i64, i128;
 }
@@ -632,10 +613,7 @@ impl_for_nonequal_types_with_casting! {
     // since iM's range [-2^(M-1),2^(M-1)) includes -2^(M-1), bounds do not change
     f32, i8; f32, i16;
     f64, i8; f64, i16; f64, i32;
-}
 
-#[cfg(feature = "i128")]
-impl_for_nonequal_types_with_casting! {
     u128, u8; u128, u16; u128, u32; u128, u64;
     i128, u8; i128, u16; i128, u32; i128, u64;
     i128, i8; i128, i16; i128, i32; i128, i64;
@@ -647,10 +625,7 @@ impl_for_nonequal_types_with_different_signedness! {
     u64, i32; u32, i32;
     u64, i64;
     usize, isize;
-}
 
-#[cfg(feature = "i128")]
-impl_for_nonequal_types_with_different_signedness! {
     u128, i8;
     u128, i16;
     u128, i32;
@@ -666,6 +641,11 @@ const U64_BOUND_IN_F64: f64 = 18446744073709551616.0;
 const I64_BOUND_IN_F32: f32 = 9223372036854775808.0;
 const I64_BOUND_IN_F64: f64 = 9223372036854775808.0;
 
+const U128_BOUND_IN_F32: f32 = std::f32::INFINITY;
+const U128_BOUND_IN_F64: f64 = 340282366920938463463374607431768211456.0;
+const I128_BOUND_IN_F32: f32 = 170141183460469231731687303715884105728.0;
+const I128_BOUND_IN_F64: f64 = 170141183460469231731687303715884105728.0;
+
 impl_for_int_and_float_types_with_bounds_check! {
     // f32, uM for 24 < M
     // f64, uM for 53 < M
@@ -678,15 +658,7 @@ impl_for_int_and_float_types_with_bounds_check! {
     f32, i32, (-I32_BOUND_IN_F32) <= _ < (I32_BOUND_IN_F32);
     f32, i64, (-I64_BOUND_IN_F32) <= _ < (I64_BOUND_IN_F32);
     f64, i64, (-I64_BOUND_IN_F64) <= _ < (I64_BOUND_IN_F64);
-}
 
-#[cfg(feature = "i128")] const U128_BOUND_IN_F32: f32 = std::f32::INFINITY;
-#[cfg(feature = "i128")] const U128_BOUND_IN_F64: f64 = 340282366920938463463374607431768211456.0;
-#[cfg(feature = "i128")] const I128_BOUND_IN_F32: f32 = 170141183460469231731687303715884105728.0;
-#[cfg(feature = "i128")] const I128_BOUND_IN_F64: f64 = 170141183460469231731687303715884105728.0;
-
-#[cfg(feature = "i128")]
-impl_for_int_and_float_types_with_bounds_check! {
     f32, u128, (0.0) <= _ < (U128_BOUND_IN_F32);
     f64, u128, (0.0) <= _ < (U128_BOUND_IN_F64);
     f32, i128, (-I128_BOUND_IN_F32) <= _ < (I128_BOUND_IN_F32);

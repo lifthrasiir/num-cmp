@@ -11,8 +11,8 @@ enum N {
     u8(u8), u16(u16), u32(u32), u64(u64), usize(usize),
     i8(i8), i16(i16), i32(i32), i64(i64), isize(isize),
     f32(f32), f64(f64),
-    #[cfg(feature = "i128")] u128(u128),
-    #[cfg(feature = "i128")] i128(i128),
+    u128(u128),
+    i128(i128),
 }
 
 fn assert_cmp<T: Into<Option<Ordering>>>(lhs: N, rhs: N, expected: T) {
@@ -65,8 +65,8 @@ fn assert_cmp<T: Into<Option<Ordering>>>(lhs: N, rhs: N, expected: T) {
                 N::i8($v) => $arm, N::i16($v) => $arm, N::i32($v) => $arm,
                 N::i64($v) => $arm, N::isize($v) => $arm,
                 N::f32($v) => $arm, N::f64($v) => $arm,
-                #[cfg(feature = "i128")] N::u128($v) => $arm,
-                #[cfg(feature = "i128")] N::i128($v) => $arm,
+                N::u128($v) => $arm,
+                N::i128($v) => $arm,
             }
         };
     }
@@ -93,23 +93,15 @@ macro_rules! n {
     ($e:expr; $($t:ident),*) => (&[$(N::$t($e as $t)),*]);
 }
 
-#[cfg(feature = "i128")]
 macro_rules! n128 {
     (($e:expr; $($t:ident),*)) => (&[$(N::$t($e as $t)),*]);
     (($e:expr; $($t:ident),*); ($($_ignore:tt)*)) => (&[$(N::$t($e as $t)),*]);
-}
-
-#[cfg(not(feature = "i128"))]
-macro_rules! n128 {
-    (($($_ignore:tt)*)) => (&[]);
-    (($($_ignore:tt)*); ($e:expr; $($t:ident),*)) => (&[$(N::$t($e as $t)),*]);
 }
 
 const F32_SUBNORMAL_MIN: f32 = 1.401298464324817e-45;
 const F64_SUBNORMAL_MIN: f64 = 4.9406564584124654e-324;
 
 // they are used to represent 2^32 when only decimal fp literals can be used
-#[cfg(not(feature = "i128"))] const F32_32: f32 = 0x1_0000_0000u64 as f32;
 const F64_32: f64 = 0x1_0000_0000u64 as f64;
 
 #[test]
@@ -404,11 +396,10 @@ fn expand_equiv_class(cls: &[N]) -> Vec<N> {
             N::isize(v) => ret.push(N::isize(v)),
             N::f32(v) => ret.extend_from_slice(&[N::f32(v), N::f64(v as f64)]),
             N::f64(v) => ret.push(N::f64(v)),
-            #[cfg(feature = "i128")] _ => {}
+            _ => {}
         }
 
         // size extension for i128
-        #[cfg(feature = "i128")]
         match *e {
             N::u8(v) => ret.push(N::u128(v as u128)),
             N::u16(v) => ret.push(N::u128(v as u128)),

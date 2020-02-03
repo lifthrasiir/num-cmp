@@ -16,10 +16,3 @@ assert_eq!(NumCmp::num_cmp(40_000_000.0f32, 40_000_000u32), Some(Ordering::Equal
 assert_ne!(NumCmp::num_cmp(40_000_001.0f32, 40_000_001u32), Some(Ordering::Equal));
 assert_eq!(NumCmp::num_cmp(f32::NAN,        40_000_002u32), None);
 ```
-
-The `i128` Cargo feature can be enabled in nightly
-to get support for `i128` and `u128` types as well,
-which is being implemented in [Rust issue #35118][issue-35118].
-
-[issue-35118]: https://github.com/rust-lang/rust/issues/35118
-
